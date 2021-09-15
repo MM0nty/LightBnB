@@ -2,7 +2,7 @@ CREATE TABLE users (
   id INTEGER PRIMARY KEY NOT NULL,
   name VARCHAR(255),
   email VARCHAR(255),
-  passdword VARCHAR(255)
+  passsword VARCHAR(255)
 );
 
 CREATE TABLE properties (
@@ -10,7 +10,7 @@ CREATE TABLE properties (
   owner_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
   title VARCHAR(255),
   description TEXT,
-  thumnail_photo_url VARCHAR(255),
+  thumbnail_photo_url VARCHAR(255),
   cover_photo_url VARCHAR(255),
   nightly_cost INTEGER,
   parking_spaces INTEGER,
