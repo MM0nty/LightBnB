@@ -69,7 +69,9 @@ exports.addUser = addUser;
  * @return {Promise<[{}]>} A promise to the reservations.
  */
 const getAllReservations = (guest_id, limit = 10) => {
-  return pool.query(`SELECT * FROM reservations WHERE guest_id = $1 LIMIT $2`, [guest_id, limit])
+  return pool.query(`SELECT reservations.*, properties.*
+  FROM reservations JOIN properties ON properties.id = property_id
+  WHERE guest_id = $1 GROUP BY reservations.id, properties.id LIMIT $2`, [guest_id, limit])
   .then((result) => {
     return result.rows;
   })
@@ -90,7 +92,7 @@ exports.getAllReservations = getAllReservations;
  */
 const getAllProperties = (options, limit = 10) => {
   const queryOptions = [];
-  let querySQL = `SELECT properties.*, property_reviews.*, AVG(property_reviews.rating) 
+  let querySQL = `SELECT properties.*, AVG(property_reviews.rating) 
   FROM properties JOIN property_reviews ON properties.id = property_id`;
     if (options.city) {
       queryOptions.push(`%${options.city}%`);
@@ -103,27 +105,28 @@ const getAllProperties = (options, limit = 10) => {
     }
     if (options.minimum_price_per_night) {
       querySQL += queryOptions.length === 0 ? ` WHERE ` : ` AND `;
-      queryOptions.push(`%${options.minimum_price_per_night}%`);
-      querySQL += `cost_per_night > $${queryOptions.length}00`;
+      queryOptions.push(`${options.minimum_price_per_night}00`);
+      querySQL += `cost_per_night > $${queryOptions.length}`;
     }
     if (options.maximum_price_per_night) {
       querySQL += queryOptions.length === 0 ? ` WHERE ` : ` AND `;
-      queryOptions.push(`%${options.maximum_price_per_night}%`);
-      querySQL += `cost_per_night < $${queryOptions.length}00`;
+      queryOptions.push(`${options.maximum_price_per_night}00`);
+      querySQL += `cost_per_night < $${queryOptions.length}`;
     }
     if (options.minimum_rating) {
       querySQL += queryOptions.length === 0 ? ` WHERE ` : ` AND `;
-      queryOptions.push(`%${options.minimum_rating}%`);
+      queryOptions.push(`${options.minimum_rating}`);
       querySQL += `rating > $${queryOptions.length}`;
     }
     queryOptions.push(limit);
-    querySQL += ` GROUP BY properties.id, property_reviews.id ORDER BY cost_per_night LIMIT $${queryOptions.length};`;
+    querySQL += ` GROUP BY properties.id ORDER BY cost_per_night LIMIT $${queryOptions.length};`;
     console.log(querySQL, queryOptions);
     return pool.query(querySQL, queryOptions)
       .then((result) => {
         return result.rows;
       })
       .catch((error) => {
+        console.log(error);
         return error.message;
     });
 };
